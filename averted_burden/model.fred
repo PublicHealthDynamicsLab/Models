@@ -1,0 +1,42 @@
+# influenza
+# m krauland
+# May 2025
+
+
+start_date = 2022-08-15
+end_date = 2023-05-31
+
+locations = Allegheny_County_PA
+population_version = US_2010.v3
+
+enable_health_records = 0
+enable_var_records = 0
+
+my mySus1
+mySus1 = 1
+my myInf
+myInf = 1
+my Infect
+Infect = 0
+my Vax
+Vax = 0
+
+Global seedsizevalue
+seedsizevalue = 50
+Global infectious
+infectious = 1
+Global percentasymp
+percentasymp = 0.25
+Global asymptrans
+asymptrans = 0.50
+# 40% reduction in susceptibility
+Global ve
+ve = 0.6 
+
+include CHILD.fred
+include flu.fred
+include VACHOUSE.fred
+include IMMUNITY1.fred
+include TRACK.fred
+
+

@@ -1,0 +1,57 @@
+##########################################
+# Set initial population immunity for influenza model
+# mkrauland
+# may 2025
+#
+
+# personal variable for whether an agent has prior immunity 
+my Imm
+Imm = 0
+
+# personal variable for the value of an agent's susceptibility due to prior immunity before being vaccinated or infected (wanes 3% per month unless vaccination occurs)
+my ImmSus
+ImmSus = 0
+
+Condition IMMUNITY1 {
+  states = Set Not 
+	
+}
+
+# Immunity from prior infection based on 45% of 3x the estimated burden from 2019-20 to represent prior immunity lasting 3 years
+# https://www.cdc.gov/flu/about/burden/2019-2020.html
+state IMMUNITY1.Start {
+  if (age = 0) then next(Not)
+  if (age = 1) then next(Not)
+  if (age = 2) then next(Set) with prob(0.1254)
+  if (age = 3) then next(Set) with prob(0.2508)
+  if (age = 4) then next(Set) with prob(0.2508)
+  if (range(age,5,17)) then next(Set) with prob(0.1848)
+  if (range(age,18,49)) then next(Set) with prob(0.1332)
+  if (range(age,50,64)) then next(Set) with prob(0.1608)
+  if (age>=65) then next(Set) with prob(0.0432)
+  default(Not)
+  wait(0)
+}
+
+# Level of prior immunity set using a normal distribution
+state IMMUNITY1.Set {
+  if (Infect<1,Vax<1,Imm<1) then set(mySus1,normal(0.5,0.1))
+  if(Infect<1,Vax<1,Imm>0,mySus1<0.97) then set(mySus1,mySus1+0.03) # wane prior immunity 3% per month for agents not vaccinated or infected
+  set_sus(INF,mySus1)
+  if (Imm<1) then set(Imm,1)
+  if (Vax<1,ImmSus<1) then set(ImmSus,mySus1) # keeps track of sus for waning protection after vaccination 
+  default(Set)
+  wait(24*30)
+ }
+
+
+state IMMUNITY1.Not {
+
+  set_sus(INF,mySus1)
+  default(Not)
+  wait()
+ }
+
+
+
+

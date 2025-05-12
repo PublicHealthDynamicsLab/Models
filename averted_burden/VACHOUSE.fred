@@ -1,0 +1,173 @@
+#### mkrauland
+#### May 2025
+
+
+##########################################
+# A model of vaccination by household units.
+# Select households and then let head decide whether to vaccinate 
+# non-head or head with no children use population probability of vaccination by age group 
+# uses CHILD model to determine if a household has children
+# Child model should load first
+# this is 1 year model
+##########################################
+
+
+Condition VacByHouse {
+  states = Start Init HasKids NoKids Ready Receive ImmuneWait Immune Vac NotVac NotHead  Under18 Over18 Excluded
+}
+
+
+##########################################
+
+
+##########################################
+
+##########################################
+# RULES
+
+State(VacByHouse,Start) {
+ wait(0)
+  default(Init)
+}
+
+##########################################
+
+State(VacByHouse,Init) {
+  
+  if (household_relationship==householder,total_count_of_CHILD.Yes_in_Household > 0) then next(HasKids)
+  if (household_relationship==householder,total_count_of_CHILD.Yes_in_Household < 1) then next(NoKids)
+  default(NotHead)
+  wait(0)   
+}
+
+
+##########################################
+
+State(VacByHouse,HasKids) {
+
+  # Head of Household decides compliance for the household with children
+  next(Vac) with prob(0.6) 
+  default(NotVac)
+  wait(0)
+}
+
+##########################################
+
+State(VacByHouse,NoKids) {
+
+  if (age_in_years >= 18, age_in_years < 50) then next(Vac) with prob(0.4)
+  if (age_in_years >= 50, age_in_years < 65) then next(Vac) with prob(0.5)
+  if (age_in_years >= 65) then next(Vac) with prob(0.7)
+  default(NotVac)
+  wait(0)
+
+}
+
+##########################################
+
+##########################################
+
+State(VacByHouse,NotHead) {
+
+  # child does whatever the Head of Household does
+  if (age_in_years <= 18) then next(Under18) 
+  default(Over18) 
+  wait(24)
+}
+
+##########################################
+  State(VacByHouse,Under18) { #head of household decides
+  # do whatever the Head of Household does
+  if (age_in_years >= 0.5, age_in_years <= 1, current_count_of_VacByHouse.Vac > 0) then next(Vac) with prob(0.7)
+  if (age_in_years > 1, age_in_years < 5, current_count_of_VacByHouse.Vac > 0) then next(Vac) with prob(0.67) # 1 to 4
+  if (age_in_years >= 5, age_in_years < 13, current_count_of_VacByHouse.Vac > 0) then next(Vac) with prob(0.60) # 5-12
+  if (age_in_years >= 13, age_in_years < 18, current_count_of_VacByHouse.Vac > 0) then next(Vac) with prob(0.58)
+  
+  default(NotVac)
+  wait(24)
+  }
+  
+##########################################
+  State(VacByHouse,Over18) { #agent decides
+  if (age_in_years >= 18, age_in_years < 50) then next(Vac) with prob(0.30)
+  if (age_in_years >= 50, age_in_years < 65, current_count_of_VacByHouse.Vac > 0) then next(Vac) with prob(0.5)
+  if (age_in_years >= 65, current_count_of_VacByHouse.Vac > 0) then next(Vac) with prob(0.7)
+  default(NotVac)
+  wait(24)
+  }
+
+##########################################
+
+
+##########################################
+
+State(VacByHouse,Vac) {
+  
+  set_state(TRACK,NotVac,Vac)
+  wait(until_Sep-20)
+
+  default(Ready)
+}
+
+##########################################
+
+##########################################
+
+State(VacByHouse,NotVac) {
+  default(NotVac)
+  wait()
+
+}
+
+##########################################
+
+State(VacByHouse,Ready) {
+  default(Receive)
+  wait(24*(uniform(1,45)))
+
+} 
+
+##########################################
+State(VacByHouse,Receive) {
+ 
+  default(ImmuneWait)
+  wait(0)
+} 
+ 
+##########################################
+State(VacByHouse,ImmuneWait) {
+  default(Immune)
+  wait(24*14)
+  
+} 
+
+##########################################
+State(VacByHouse,Immune) {
+
+
+# Set susceptibility with normal VE for vaccinated agents without prior immunity
+ if (Infect<1,Vax<1,Imm<1,mySus1>0.50) then set(mySus1,ve) 
+
+# When vaccinated, agents with prior immunity get a bump in immunity from the vaccine proportional to how much protection they still have from infection and to VE
+if (Infect<1,Vax<1,Imm>0) then set(mySus1,mySus1-(mySus1*ve))
+
+# Vaccine protection wanes 7% monthly for vaccinated agents without prior immunity 
+ if (Infect<1,Vax>0,Imm<1,mySus1<=0.93) then set(mySus1,mySus1+0.07)
+
+# For agents with prior infection and vaccination, immunity wanes at 7% per month until they reach immunity level from before vaccination (ImmSus), then immunity wanes at 3% per month
+ if (Infect<1,Vax>0,Imm>0,mySus1<ImmSus) then set(mySus1,mySus1+0.07)
+ if (Infect<1,Vax>0,Imm>0,range(mySus1,ImmSus,0.97)) then set(mySus1,mySus1+0.03)
+
+ if (Vax<1) then set(Vax,1)
+ set_sus(INF,mySus1)
+ default(Immune)
+   
+ wait(24*30)
+} 
+
+
+##########################################
+
+
+
+

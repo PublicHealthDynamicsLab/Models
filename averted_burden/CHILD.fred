@@ -1,0 +1,26 @@
+# mkrauland
+# may 2025
+# give agent a state that says whether <18
+
+
+Condition CHILD {
+  states = Start Yes No 
+}
+
+
+
+state CHILD.Start {
+  if (range(age,0,17)) then next(Yes)
+  
+  default(No)
+  wait(0)
+}
+
+state CHILD.Yes {
+  default(Yes)
+  wait()
+}
+state CHILD.No {
+  default(No)
+  wait()
+}
